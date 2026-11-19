@@ -1,0 +1,12 @@
+{
+  "name": "mindsci",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"cd mindsci-app/backend && npm run dev\" \"cd mindsci-app/frontend && npm run dev\"",
+    "install-all": "cd mindsci-app/backend && npm install && cd ../frontend && npm install && cd ../../scheduler && npm install",
+    "collect": "cd scheduler && node collect-studies.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
