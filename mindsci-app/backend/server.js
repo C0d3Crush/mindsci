@@ -38,6 +38,16 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_topic ON studies(topic);
   CREATE INDEX IF NOT EXISTS idx_year ON studies(year);
+
+  CREATE TABLE IF NOT EXISTS tracking_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    feature_key TEXT NOT NULL,
+    value REAL NOT NULL,
+    date TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(feature_key, date)
+  );
+  CREATE INDEX IF NOT EXISTS idx_tracking_key ON tracking_entries(feature_key, date);
 `);
 
 app.get('/api/studies', (req, res) => {
@@ -101,6 +111,29 @@ app.get('/api/search', (req, res) => {
   ).all(like, like, like, like);
 
   res.json(results);
+});
+
+// Tracking API
+app.get('/api/tracking/:feature_key', (req, res) => {
+  const { feature_key } = req.params;
+  const since = new Date();
+  since.setDate(since.getDate() - 28);
+  const entries = db.prepare(
+    `SELECT * FROM tracking_entries WHERE feature_key = ? AND date >= ? ORDER BY date ASC`
+  ).all(feature_key, since.toISOString().slice(0, 10));
+  res.json(entries);
+});
+
+app.post('/api/tracking/:feature_key', (req, res) => {
+  const { feature_key } = req.params;
+  const { value, date } = req.body;
+  if (value == null || !date) return res.status(400).json({ error: 'value and date required' });
+  db.prepare(
+    `INSERT INTO tracking_entries (feature_key, value, date) VALUES (?, ?, ?)
+     ON CONFLICT(feature_key, date) DO UPDATE SET value = excluded.value`
+  ).run(feature_key, Number(value), date);
+  const entry = db.prepare('SELECT * FROM tracking_entries WHERE feature_key = ? AND date = ?').get(feature_key, date);
+  res.json(entry);
 });
 
 app.listen(PORT, () => console.log(`MindSci Backend läuft auf Port ${PORT}`));
