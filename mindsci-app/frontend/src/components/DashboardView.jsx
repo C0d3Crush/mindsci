@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import FeatureTracker_Meditation from './FeatureTracker_Meditation.jsx';
+import FeatureTracker_Sport from './FeatureTracker_Sport.jsx';
 
 function getLast7Days() {
   return Array.from({ length: 7 }, (_, i) => {
@@ -15,6 +17,8 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   const [featuredStudy, setFeaturedStudy] = useState(null);
   const [meditationWeek, setMeditationWeek] = useState([]);
   const [sportWeek, setSportWeek] = useState([]);
+  const [showMeditationDetail, setShowMeditationDetail] = useState(false);
+  const [showSportDetail, setShowSportDetail] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           sub={meditationDone >= 5 ? 'Wochenziel erreicht! 🎉' : `Noch ${5 - meditationDone} Einheiten`}
           accent={meditationDone >= 5 ? 'var(--green)' : meditationDone >= 3 ? '#fbbf24' : '#ef4444'}
           progress={meditationDone / 5}
-          studyRef="Goyal et al. (2014)"
+          onClick={() => setShowMeditationDetail(true)}
         />
         <StatCard
           icon="🏃"
@@ -89,7 +93,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           sub={sportDone >= 4 ? 'Wochenziel erreicht! 🎉' : `Noch ${4 - sportDone} Einheiten`}
           accent={sportDone >= 4 ? 'var(--green)' : sportDone >= 2 ? '#fbbf24' : '#ef4444'}
           progress={sportDone / 4}
-          studyRef="Chekroud et al. (2018)"
+          onClick={() => setShowSportDetail(true)}
         />
       </div>
 
@@ -173,6 +177,40 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           </section>
         </div>
       </div>
+
+      {showMeditationDetail && (
+        <div
+          onClick={() => setShowMeditationDetail(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
+            padding: 28, maxWidth: 480, width: '90%', position: 'relative',
+          }}>
+            <button
+              onClick={() => setShowMeditationDetail(false)}
+              style={{
+                position: 'absolute', top: 14, right: 14, background: 'var(--bg3)',
+                border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)',
+                cursor: 'pointer', fontSize: 13, padding: '3px 10px',
+              }}
+            >✕</button>
+            <FeatureTracker_Meditation onOpenStudy={(id) => { setShowMeditationDetail(false); onOpenStudy(id); }} />
+          </div>
+        </div>
+      )}
+
+      {showSportDetail && (
+        <div onClick={() => setShowSportDetail(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 28, maxWidth: 480, width: '90%', position: 'relative' }}>
+            <button onClick={() => setShowSportDetail(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)', cursor: 'pointer', fontSize: 13, padding: '3px 10px' }}>✕</button>
+            <FeatureTracker_Sport onOpenStudy={(id) => { setShowSportDetail(false); onOpenStudy(id); }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
