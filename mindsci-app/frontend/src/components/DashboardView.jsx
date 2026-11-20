@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import FeatureTracker_Meditation from './FeatureTracker_Meditation.jsx';
 import FeatureTracker_Sport from './FeatureTracker_Sport.jsx';
+import FeatureTracker_Verbindung from './FeatureTracker_Verbindung.jsx';
 
 function getLast7Days() {
   return Array.from({ length: 7 }, (_, i) => {
@@ -17,8 +18,10 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   const [featuredStudy, setFeaturedStudy] = useState(null);
   const [meditationWeek, setMeditationWeek] = useState([]);
   const [sportWeek, setSportWeek] = useState([]);
+  const [verbindungWeek, setVerbindungWeek] = useState([]);
   const [showMeditationDetail, setShowMeditationDetail] = useState(false);
   const [showSportDetail, setShowSportDetail] = useState(false);
+  const [showVerbindungDetail, setShowVerbindungDetail] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +30,8 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
       fetch('/api/studies?limit=5').then(r => r.json()),
       fetch('/api/tracking/meditation').then(r => r.json()),
       fetch('/api/tracking/sport').then(r => r.json()),
-    ]).then(([topicsRes, studiesRes, trackingRes, sportRes]) => {
+      fetch('/api/tracking/verbindung').then(r => r.json()),
+    ]).then(([topicsRes, studiesRes, trackingRes, sportRes, verbindungRes]) => {
       if (topicsRes.status === 'fulfilled') setTopics(topicsRes.value);
       if (studiesRes.status === 'fulfilled') {
         setRecentStudies(studiesRes.value.studies || []);
@@ -37,6 +41,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
       }
       if (trackingRes.status === 'fulfilled') setMeditationWeek(trackingRes.value || []);
       if (sportRes.status === 'fulfilled') setSportWeek(sportRes.value || []);
+      if (verbindungRes.status === 'fulfilled') setVerbindungWeek(verbindungRes.value || []);
       setLoading(false);
     });
   }, []);
@@ -48,6 +53,9 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   ).length;
   const sportDone = meditationDays.filter(d =>
     sportWeek.some(e => e.date === d && e.value >= 45)
+  ).length;
+  const verbindungDone = meditationDays.filter(d =>
+    verbindungWeek.some(e => e.date === d && e.value >= 1)
   ).length;
 
   if (loading) return <div style={{ padding: 40, color: 'var(--text2)' }}>Lade Dashboard...</div>;
@@ -76,7 +84,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           onClick={() => topTopic && onViewStudies(topTopic.topic)}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
         <StatCard
           icon="🧘"
           label="MEDITATION DIESE WOCHE"
@@ -94,6 +102,15 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           accent={sportDone >= 4 ? 'var(--green)' : sportDone >= 2 ? '#fbbf24' : '#ef4444'}
           progress={sportDone / 4}
           onClick={() => setShowSportDetail(true)}
+        />
+        <StatCard
+          icon="💬"
+          label="VERBINDUNG DIESE WOCHE"
+          value={`${verbindungDone} / 5`}
+          sub={verbindungDone >= 5 ? 'Wochenziel erreicht! 🎉' : `Noch ${5 - verbindungDone} Gespräche`}
+          accent={verbindungDone >= 5 ? 'var(--green)' : verbindungDone >= 3 ? '#fbbf24' : '#ef4444'}
+          progress={verbindungDone / 5}
+          onClick={() => setShowVerbindungDetail(true)}
         />
       </div>
 
@@ -208,6 +225,15 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 28, maxWidth: 480, width: '90%', position: 'relative' }}>
             <button onClick={() => setShowSportDetail(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)', cursor: 'pointer', fontSize: 13, padding: '3px 10px' }}>✕</button>
             <FeatureTracker_Sport onOpenStudy={(id) => { setShowSportDetail(false); onOpenStudy(id); }} />
+          </div>
+        </div>
+      )}
+
+      {showVerbindungDetail && (
+        <div onClick={() => setShowVerbindungDetail(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 28, maxWidth: 480, width: '90%', position: 'relative' }}>
+            <button onClick={() => setShowVerbindungDetail(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)', cursor: 'pointer', fontSize: 13, padding: '3px 10px' }}>✕</button>
+            <FeatureTracker_Verbindung onOpenStudy={(id) => { setShowVerbindungDetail(false); onOpenStudy(id); }} />
           </div>
         </div>
       )}
