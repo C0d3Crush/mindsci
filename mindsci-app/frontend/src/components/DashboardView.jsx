@@ -14,6 +14,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   const [totalStudies, setTotalStudies] = useState(0);
   const [featuredStudy, setFeaturedStudy] = useState(null);
   const [meditationWeek, setMeditationWeek] = useState([]);
+  const [sportWeek, setSportWeek] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +22,8 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
       fetch('/api/topics').then(r => r.json()),
       fetch('/api/studies?limit=5').then(r => r.json()),
       fetch('/api/tracking/meditation').then(r => r.json()),
-    ]).then(([topicsRes, studiesRes, trackingRes]) => {
+      fetch('/api/tracking/sport').then(r => r.json()),
+    ]).then(([topicsRes, studiesRes, trackingRes, sportRes]) => {
       if (topicsRes.status === 'fulfilled') setTopics(topicsRes.value);
       if (studiesRes.status === 'fulfilled') {
         setRecentStudies(studiesRes.value.studies || []);
@@ -30,6 +32,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
         if (all.length) setFeaturedStudy(all[Math.floor(Math.random() * Math.min(all.length, 20))]);
       }
       if (trackingRes.status === 'fulfilled') setMeditationWeek(trackingRes.value || []);
+      if (sportRes.status === 'fulfilled') setSportWeek(sportRes.value || []);
       setLoading(false);
     });
   }, []);
@@ -38,6 +41,9 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   const meditationDays = getLast7Days();
   const meditationDone = meditationDays.filter(d =>
     meditationWeek.some(e => e.date === d && e.value >= 10)
+  ).length;
+  const sportDone = meditationDays.filter(d =>
+    sportWeek.some(e => e.date === d && e.value >= 45)
   ).length;
 
   if (loading) return <div style={{ padding: 40, color: 'var(--text2)' }}>Lade Dashboard...</div>;
@@ -48,7 +54,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
       <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 28 }}>Dein Überblick für mentale Gesundheit</p>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
         <StatCard
           icon="📚"
           label="STUDIEN IM WIKI"
@@ -58,20 +64,32 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
           accent="var(--accent)"
         />
         <StatCard
-          icon="🧘"
-          label="MEDITATION DIESE WOCHE"
-          value={`${meditationDone} / 5`}
-          sub={meditationDone >= 5 ? 'Wochenziel erreicht! 🎉' : `Noch ${5 - meditationDone} Einheiten`}
-          accent={meditationDone >= 5 ? 'var(--green)' : meditationDone >= 3 ? '#fbbf24' : '#ef4444'}
-          progress={meditationDone / 5}
-        />
-        <StatCard
           icon="🔬"
           label="BELIEBTESTES THEMA"
           value={topTopic?.topic || '—'}
           sub={topTopic ? `${topTopic.count} Studien` : ''}
           accent="var(--accent2)"
           onClick={() => topTopic && onViewStudies(topTopic.topic)}
+        />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 28 }}>
+        <StatCard
+          icon="🧘"
+          label="MEDITATION DIESE WOCHE"
+          value={`${meditationDone} / 5`}
+          sub={meditationDone >= 5 ? 'Wochenziel erreicht! 🎉' : `Noch ${5 - meditationDone} Einheiten`}
+          accent={meditationDone >= 5 ? 'var(--green)' : meditationDone >= 3 ? '#fbbf24' : '#ef4444'}
+          progress={meditationDone / 5}
+          studyRef="Goyal et al. (2014)"
+        />
+        <StatCard
+          icon="🏃"
+          label="SPORT DIESE WOCHE"
+          value={`${sportDone} / 4`}
+          sub={sportDone >= 4 ? 'Wochenziel erreicht! 🎉' : `Noch ${4 - sportDone} Einheiten`}
+          accent={sportDone >= 4 ? 'var(--green)' : sportDone >= 2 ? '#fbbf24' : '#ef4444'}
+          progress={sportDone / 4}
+          studyRef="Chekroud et al. (2018)"
         />
       </div>
 
@@ -159,7 +177,7 @@ export default function DashboardView({ onOpenStudy, onViewStudies }) {
   );
 }
 
-function StatCard({ icon, label, value, sub, accent, onClick, progress }) {
+function StatCard({ icon, label, value, sub, accent, onClick, progress, studyRef }) {
   return (
     <div onClick={onClick} style={{
       background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12,
@@ -177,6 +195,7 @@ function StatCard({ icon, label, value, sub, accent, onClick, progress }) {
         </div>
       )}
       {sub && <div style={{ fontSize: 12, color: 'var(--text2)' }}>{sub}</div>}
+      {studyRef && <div style={{ fontSize: 10, color: 'var(--text2)', marginTop: 6, opacity: 0.6 }}>📄 {studyRef}</div>}
     </div>
   );
 }
