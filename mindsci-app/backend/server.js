@@ -81,7 +81,7 @@ app.get('/api/studies/:id', (req, res) => {
   if (!study) return res.status(404).json({ error: 'Not found' });
 
   if (study.file_path) {
-    const wikiPath = path.join(__dirname, '..', '..', '..', 'wiki', study.file_path);
+    const wikiPath = path.join(__dirname, '..', '..', 'wiki', study.file_path);
     if (fs.existsSync(wikiPath)) {
       const raw = fs.readFileSync(wikiPath, 'utf-8');
       const parsed = matter(raw);
@@ -112,6 +112,33 @@ app.get('/api/search', (req, res) => {
 
   res.json(results);
 });
+
+function syncWikiToDb() {
+  const wikiDir = path.join(__dirname, '..', '..', 'wiki');
+  if (!fs.existsSync(wikiDir)) return;
+  const files = fs.readdirSync(wikiDir).filter(f => f.endsWith('.md'));
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO studies
+      (id, title, authors, year, journal, topic, summary, key_findings, study_type, url, doi, file_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  let count = 0;
+  for (const file of files) {
+    const raw = fs.readFileSync(path.join(wikiDir, file), 'utf-8');
+    const { data, content } = matter(raw);
+    if (!data.id || !data.title) continue;
+    const sections = content.split(/^## /m);
+    const summary = sections.find(s => s.startsWith('Zusammenfassung'))?.replace('Zusammenfassung\n', '').trim() || null;
+    const keyFindings = sections.find(s => s.startsWith('Kernerkenntnisse'))?.replace('Kernerkenntnisse\n', '').trim() || null;
+    insert.run(data.id, data.title, data.authors || null, data.year || null, data.journal || null,
+      data.topic || null, summary, keyFindings, data.study_type || null,
+      data.url || null, data.doi || null, file);
+    count++;
+  }
+  if (count > 0) console.log(`Wiki-Sync: ${count} Einträge importiert`);
+}
+
+syncWikiToDb();
 
 // Tracking API
 app.get('/api/tracking/:feature_key', (req, res) => {

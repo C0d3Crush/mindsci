@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import WikiView from './components/WikiView.jsx';
 import StudyDetail from './components/StudyDetail.jsx';
-import FeatureTracker_Schlaf from './components/FeatureTracker_Schlaf.jsx';
 
 export default function App() {
   const [topics, setTopics] = useState([]);
@@ -98,7 +97,7 @@ function TrackingView({ onOpenStudy }) {
       <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 28 }}>
         Evidenzbasierte Selbstmessung — jedes Feature basiert direkt auf einer peer-reviewed Studie.
       </p>
-      <FeatureTracker_Schlaf onOpenStudy={onOpenStudy} />
+      <p style={{ color: 'var(--text2)', fontSize: 14 }}>Noch keine Tracker vorhanden — der Feature Builder baut jeden Donnerstag einen neuen.</p>
     </div>
   );
 }
