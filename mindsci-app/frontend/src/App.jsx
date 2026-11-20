@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import WikiView from './components/WikiView.jsx';
 import StudyDetail from './components/StudyDetail.jsx';
-import FeatureTracker_Meditation from './components/FeatureTracker_Meditation.jsx';
+import DashboardView from './components/DashboardView.jsx';
 
 export default function App() {
   const [topics, setTopics] = useState([]);
@@ -11,13 +11,10 @@ export default function App() {
   const [selectedStudy, setSelectedStudy] = useState(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('wiki'); // 'wiki' | 'tracking'
+  const [view, setView] = useState('dashboard');
 
   useEffect(() => {
-    fetch('/api/topics')
-      .then(r => r.json())
-      .then(setTopics)
-      .catch(() => {});
+    fetch('/api/topics').then(r => r.json()).then(setTopics).catch(() => {});
   }, []);
 
   const fetchStudies = useCallback(async () => {
@@ -40,6 +37,13 @@ export default function App() {
     const res = await fetch(`/api/studies/${id}`);
     const data = await res.json();
     setSelectedStudy(data);
+    setView('wiki');
+  };
+
+  const viewStudies = (topic = null) => {
+    setSelectedTopic(topic);
+    setSelectedStudy(null);
+    setView('wiki');
   };
 
   return (
@@ -47,12 +51,15 @@ export default function App() {
       <Sidebar
         topics={topics}
         selected={selectedTopic}
-        onSelect={t => { setSelectedTopic(t); setSelectedStudy(null); setView('wiki'); }}
         view={view}
+        onSelect={t => { setSelectedTopic(t); setSelectedStudy(null); setView('wiki'); }}
         onViewChange={setView}
       />
       <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {view === 'wiki' ? (
+        {view === 'dashboard' && (
+          <DashboardView onOpenStudy={openStudy} onViewStudies={viewStudies} />
+        )}
+        {view === 'wiki' && (
           <>
             <Header search={search} onSearch={setSearch} total={total} />
             {selectedStudy
@@ -60,15 +67,13 @@ export default function App() {
               : <WikiView studies={studies} loading={loading} onOpen={openStudy} />
             }
           </>
-        ) : (
-          <TrackingView onOpenStudy={(id) => { openStudy(id); setView('wiki'); }} />
         )}
       </main>
     </div>
   );
 }
 
-function Sidebar({ topics, selected, onSelect, view, onViewChange }) {
+function Sidebar({ topics, selected, view, onSelect, onViewChange }) {
   const totalCount = topics.reduce((s, t) => s + t.count, 0);
   return (
     <aside style={{
@@ -80,7 +85,7 @@ function Sidebar({ topics, selected, onSelect, view, onViewChange }) {
         <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>Mentale Gesundheit · Forschung</div>
       </div>
       <nav style={{ padding: '12px 8px', flex: 1 }}>
-        <SidebarItem label="📊 Tracking" count={0} active={view === 'tracking'} onClick={() => onViewChange('tracking')} />
+        <SidebarItem label="Übersicht" active={view === 'dashboard'} onClick={() => onViewChange('dashboard')} />
         <div style={{ height: 1, background: 'var(--border)', margin: '8px 2px' }} />
         <SidebarItem label="Alle Studien" count={totalCount} active={view === 'wiki' && !selected} onClick={() => onSelect(null)} />
         {topics.map(t => (
@@ -88,18 +93,6 @@ function Sidebar({ topics, selected, onSelect, view, onViewChange }) {
         ))}
       </nav>
     </aside>
-  );
-}
-
-function TrackingView({ onOpenStudy }) {
-  return (
-    <div style={{ padding: 32, flex: 1, overflow: 'auto' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>📊 Tracking</h1>
-      <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 28 }}>
-        Evidenzbasierte Selbstmessung — jedes Feature basiert direkt auf einer peer-reviewed Studie.
-      </p>
-      <FeatureTracker_Meditation onOpenStudy={onOpenStudy} />
-    </div>
   );
 }
 
